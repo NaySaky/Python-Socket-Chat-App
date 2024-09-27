@@ -6,7 +6,7 @@ from threading import Thread
 import datetime
 
 PORT = 5050
-SERVER = "10.10.60.140"
+SERVER = "localhost"
 ADDR = (SERVER, PORT)
 FORMAT = "utf-8"
 DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -24,7 +24,9 @@ def connect():
     return None
 
 
-def send(client, msg, text_area):
+def send(client, msg, text_area, msg_entry):
+    if not msg.strip():
+        return  # Do not send empty messages
     try:
         message = msg.encode(FORMAT)
         client.send(message)
@@ -33,6 +35,9 @@ def send(client, msg, text_area):
         text_area.insert(tk.END, f"You: {msg}\n")
         text_area.config(state=tk.DISABLED)
         text_area.see(tk.END)
+
+        # Clear the entry field after sending
+        msg_entry.delete(0, tk.END)
     except socket.error as e:
         print(f"Failed to send a message: {e}")
 
@@ -70,7 +75,7 @@ def run_gui():
     msg_entry.pack(padx=20, pady=5, fill=tk.X)
 
     # Button to send messages
-    send_button = tk.Button(root, text="Send", command=lambda: send(client, msg_entry.get(), text_area))
+    send_button = tk.Button(root, text="Send", command=lambda: send(client, msg_entry.get(), text_area, msg_entry))
     send_button.pack(pady=10)
 
     # Thread to receive messages
@@ -80,15 +85,14 @@ def run_gui():
 
     # Bind "Enter" key to send messages
     def on_enter(event):
-        send(client, msg_entry.get(), text_area)
-        msg_entry.delete(0, tk.END)
+        send(client, msg_entry.get(), text_area, msg_entry)
     
     root.bind('<Return>', on_enter)
 
     root.mainloop()
 
     # Send disconnect message when closing the app
-    send(client, DISCONNECT_MESSAGE, text_area)
+    send(client, DISCONNECT_MESSAGE, text_area, msg_entry)
     time.sleep(1)
     print("Disconnected")
 
